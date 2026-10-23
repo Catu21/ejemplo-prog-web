@@ -1,0 +1,2 @@
+# Los scripts de shell siempre con LF (Render/Linux falla con CRLF)
+*.sh text eol=lf
