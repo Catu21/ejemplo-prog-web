@@ -1,0 +1,27 @@
+databases:
+  - name: api-tareas-db
+    plan: free
+    databaseName: api_tareas
+
+services:
+  - type: web
+    name: api-tareas
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: api-tareas-db
+          property: connectionString
+      - key: DEMO_USER
+        value: demo
+      - key: DEMO_PASSWORD
+        sync: false   # se captura en el panel de Render, no en el repo

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tareas</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    input, textarea, button { font: inherit; padding: .4rem; margin: .2rem 0; }
+    input, textarea { width: 100%; box-sizing: border-box; }
+    button { cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid #eee; }
+    li span { flex: 1; }
+    .done span { text-decoration: line-through; color: #888; }
+    #mensaje { padding: .6rem; border-radius: 6px; display: none; white-space: pre-wrap; }
+    .ok { background: #e6f4ea; } .error { background: #fce8e6; }
+  </style>
+</head>
+<body>
+  <h1>Tareas</h1>
+  <div id="mensaje"></div>
+
+  <section id="login">
+    <h2>Iniciar sesión</h2>
+    <input id="usuario" placeholder="Usuario" autocomplete="username">
+    <input id="clave" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button onclick="iniciarSesion()">Entrar</button>
+  </section>
+
+  <section id="sesion" hidden>
+    <span>Sesión iniciada.</span> <button onclick="cerrarSesion()">Salir</button>
+    <h2>Nueva tarea</h2>
+    <input id="titulo" placeholder="Título (máx. 100)" maxlength="100">
+    <textarea id="descripcion" placeholder="Descripción (opcional)"></textarea>
+    <button onclick="crearTarea()">Crear</button>
+  </section>
+
+  <section>
+    <h2>Lista</h2>
+    <ul id="lista"></ul>
+  </section>
+
+<script>
+  // Si la página se sirve desde otro dominio, cambia API a la URL completa (y configura CORS).
+  const API = "";
+  let token = null;
+
+  function mostrar(texto, esError) {
+    const m = document.getElementById("mensaje");
+    m.textContent = texto;
+    m.className = esError ? "error" : "ok";
+    m.style.display = "block";
+  }
+
+  // Envuelve fetch: agrega el JWT y muestra el código y el cuerpo de error de la API.
+  async function llamar(ruta, opciones = {}) {
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = "Bearer " + token;
+    const resp = await fetch(API + ruta, { ...opciones, headers });
+    const datos = resp.status === 204 ? null : await resp.json().catch(() => null);
+    if (!resp.ok) {
+      mostrar(`Error ${resp.status}: ${JSON.stringify(datos)}`, true);
+      throw new Error(resp.status);
+    }
+    return datos;
+  }
+
+  async function iniciarSesion() {
+    try {
+      const datos = await llamar("/api/token/", {
+        method: "POST",
+        body: JSON.stringify({
+          username: document.getElementById("usuario").value,
+          password: document.getElementById("clave").value,
+        }),
+      });
+      token = datos.access;
+      document.getElementById("login").hidden = true;
+      document.getElementById("sesion").hidden = false;
+      mostrar("Sesión iniciada (200 OK)");
+    } catch (e) {}
+  }
+
+  function cerrarSesion() {
+    token = null;
+    document.getElementById("login").hidden = false;
+    document.getElementById("sesion").hidden = true;
+    cargarTareas();
+  }
+
+  async function cargarTareas() {
+    try {
+      const tareas = await llamar("/api/tasks/");
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "";
+      for (const t of tareas) {
+        const li = document.createElement("li");
+        li.className = t.completed ? "done" : "";
+        const texto = document.createElement("span");
+        texto.textContent = t.title + (t.description ? " — " + t.description : "");
+        const bCompletar = document.createElement("button");
+        bCompletar.textContent = t.completed ? "Reabrir" : "Completar";
+        bCompletar.onclick = () => cambiar(t.id, !t.completed);
+        const bBorrar = document.createElement("button");
+        bBorrar.textContent = "Eliminar";
+        bBorrar.onclick = () => eliminar(t.id);
+        li.append(texto, bCompletar, bBorrar);
+        lista.append(li);
+      }
+      if (!tareas.length) lista.innerHTML = "<li>No hay tareas.</li>";
+    } catch (e) {}
+  }
+
+  async function crearTarea() {
+    try {
+      await llamar("/api/tasks/", {
+        method: "POST",
+        body: JSON.stringify({
+          title: document.getElementById("titulo").value,
+          description: document.getElementById("descripcion").value,
+        }),
+      });
+      document.getElementById("titulo").value = "";
+      document.getElementById("descripcion").value = "";
+      mostrar("Tarea creada (201 Created)");
+      cargarTareas();
+    } catch (e) {}
+  }
+
+  async function cambiar(id, completed) {
+    try {
+      await llamar(`/api/tasks/${id}/`, { method: "PATCH", body: JSON.stringify({ completed }) });
+      cargarTareas();
+    } catch (e) {}
+  }
+
+  async function eliminar(id) {
+    try {
+      await llamar(`/api/tasks/${id}/`, { method: "DELETE" });
+      mostrar("Tarea eliminada (204 No Content)");
+      cargarTareas();
+    } catch (e) {}
+  }
+
+  cargarTareas();
+</script>
+</body>
+</html>

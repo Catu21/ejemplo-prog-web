@@ -1,0 +1,39 @@
+# Levanta PostgreSQL y la API: docker compose up --build
+# Compose lee .env de esta carpeta para sustituir ${...}.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # los datos sobreviven a docker compose down
+    ports:
+      - "${DB_PORT:-5433}:5432"           # 5433 en tu PC para no chocar con un Postgres instalado
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py crear_demo &&
+             python manage.py runserver 0.0.0.0:8000"
+    env_file: .env
+    environment:
+      DB_HOST: db      # dentro de la red de Compose el servidor se llama "db"
+      DB_PORT: "5432"  # puerto interno del contenedor, no el publicado
+    volumes:
+      - .:/app         # recarga automática al editar el código
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
