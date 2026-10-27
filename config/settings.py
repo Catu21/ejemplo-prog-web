@@ -140,6 +140,15 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
+# --- Logs: con DEBUG=False Django no imprime los errores 500 por defecto;
+# así aparecen (con traceback) en los logs de Render.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"django": {"handlers": ["console"], "level": "INFO"}},
+}
+
 # --- HTTPS en producción (Render termina TLS y envía X-Forwarded-Proto) ---
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

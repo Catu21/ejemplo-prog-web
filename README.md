@@ -1,4 +1,4 @@
-# Ejemplo Prog Web ? API de tareas
+# API REST de tareas (Django REST Framework)
 
 Práctica educativa: API de tareas con JWT, un frontend HTML/JS y un cliente Python, lista para ejecutarse en localhost y desplegarse en Render.
 
@@ -8,6 +8,7 @@ tasks/           app: modelo, serializer, vista, tests, frontend (templates/inde
 clientes/        cliente.py (requests)
 build.sh         build de Render
 Dockerfile       imagen de la API; docker-compose.yml la levanta junto con PostgreSQL
+start.sh         arranque del contenedor en producción (migrate + Gunicorn)
 render.yaml      blueprint de Render
 ```
 
@@ -119,9 +120,10 @@ Mismo código; solo cambian las variables de entorno:
 
 1. Sube el repositorio a GitHub.
 2. En Render: **New → Blueprint** (usa `render.yaml`) o **New → Web Service** con:
-   - Root Directory: dejar vac?o (el proyecto est? en la ra?z del repositorio)
+   - Root Directory: dejar vacío (el proyecto está en la raíz del repositorio)
    - Build Command: `bash build.sh`
    - Start Command: `gunicorn config.wsgi:application`
+   - Si Render detecta el `Dockerfile` (runtime **Docker**), no usa Build/Start Command: el contenedor ejecuta `start.sh` (migraciones, usuario demo y Gunicorn).
 3. Base de datos: con Blueprint se crea sola. Con Web Service manual, crea antes **New → PostgreSQL** y copia su *Internal Database URL* en `DATABASE_URL` (obligatoria: el proyecto ya no usa SQLite).
 4. Variables de entorno: `DEBUG=False`, `SECRET_KEY` (generada), `DATABASE_URL`, `DEMO_USER`, `DEMO_PASSWORD` (escríbela en el panel), y opcionalmente `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`. `RENDER_EXTERNAL_HOSTNAME` lo define Render y se agrega solo a `ALLOWED_HOSTS`.
 5. Cuando termine el deploy, prueba con la URL pública: `python clientes/cliente.py https://TU-APP.onrender.com`.
