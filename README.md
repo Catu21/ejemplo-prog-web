@@ -130,3 +130,4 @@ Mismo código; solo cambian las variables de entorno:
 
 Estado: la configuración está preparada pero **el despliegue en Render no se ha probado**. En localhost se verificó con Docker y PostgreSQL (tests, solicitudes reales y Gunicorn dentro del contenedor).
 "# prueba_1" 
+"# prueba_1" 
